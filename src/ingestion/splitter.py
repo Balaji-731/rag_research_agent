@@ -1,5 +1,5 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from loader import PDFLoader
+from src.ingestion.loader import PDFLoader
 class TextSplitter:
     def __init__(self,chunk_size=1000,chunk_overlap=200):
         self.splitter=RecursiveCharacterTextSplitter(

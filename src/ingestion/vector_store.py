@@ -1,8 +1,8 @@
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from loader import PDFLoader
-from splitter import TextSplitter
-from embeddings import Embeddings
+from src.ingestion.loader import PDFLoader
+from src.ingestion.splitter import TextSplitter
+from src.ingestion.embeddings import Embeddings
 
 
 class VectorStore:

@@ -1,6 +1,6 @@
 from langchain_huggingface import HuggingFaceEmbeddings
-from loader import PDFLoader
-from splitter import TextSplitter
+from src.ingestion.loader import PDFLoader
+from src.ingestion.splitter import TextSplitter
 
 class Embeddings:
     def __init__(self,model_name="sentence-transformers/all-MiniLM-L6-v2"):
