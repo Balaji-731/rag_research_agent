@@ -14,3 +14,4 @@ tiktoken
 pymupdf
 langchain-huggingface
 langchain-chroma
+langchain-ollama
