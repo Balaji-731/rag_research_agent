@@ -7,8 +7,8 @@ class ResponseGenerator:
     def __init__(self):
         self.llm=OllamaLLM(model="llama3.2")
     
-    def generate_response(self,query,context):
-        prompt=RAG_PROMPT.format(context=context,question=query)
+    def generate_response(self,query,context,history):
+        prompt=RAG_PROMPT.format(context=context,question=query,history=history)
         response=self.llm.invoke(prompt)
         return response.strip()
     
