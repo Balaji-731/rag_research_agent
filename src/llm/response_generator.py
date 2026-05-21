@@ -1,5 +1,6 @@
 from langchain_ollama import OllamaLLM
 from src.llm.prompt import RAG_PROMPT
+from src.llm.hybrid_prompt import HYBRID_RAG_PROMPT
 from src.retrieval.retrieval_pipeline import RetrievalPipeline
 from src.llm.context_builder import ContextBuilder
 
@@ -7,8 +8,11 @@ class ResponseGenerator:
     def __init__(self):
         self.llm=OllamaLLM(model="llama3.2")
     
-    def generate_response(self,query,context,history):
-        prompt=RAG_PROMPT.format(context=context,question=query,history=history)
+    def generate_response(self,query,context,history,mode="rag"):
+        if mode == "rag":
+            prompt=RAG_PROMPT.format(context=context,question=query,history=history)
+        else:
+            prompt = HYBRID_RAG_PROMPT.format(context=context,question=query,history=history)
         response=self.llm.invoke(prompt)
         return response.strip()
     

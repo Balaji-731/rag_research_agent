@@ -15,11 +15,11 @@ class GeneratorPipeline:
         self.chat_memory = ChatMemory()
         self.memory_formatter = MemoryFormatter()
 
-    def run(self,query,reranked_docs):
+    def run(self,query,reranked_docs,mode="rag"):
         context = self.context_builder.build_context(reranked_docs)
         history = self.chat_memory.get_history()
         formatted_history = self.memory_formatter.format_memory(history)
-        response = self.response_generator.generate_response(query, context, formatted_history)
+        response = self.response_generator.generate_response(query, context, formatted_history,mode=mode)
         citations = self.citation_builder.build_citation(reranked_docs)
         formatted_response = self.formatter.format_response(response, citations)
 

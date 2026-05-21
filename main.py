@@ -1,12 +1,17 @@
 from src.llm.generator_pipeline import GeneratorPipeline
 from src.retrieval.retrieval_pipeline import RetrievalPipeline
-
+from src.agent.query_router import QueryRouter
+from src.agent.conversational_agent import ConversationalAgent
 
 def main():
 
     # INITIALIZE PIPELINE
     ret_pipeline = RetrievalPipeline()
     gen_pipeline = GeneratorPipeline()
+    router = QueryRouter()
+    conversational_agent = ConversationalAgent()
+    
+
 
     print("\n========== AGENTIC RAG ==========\n")
 
@@ -29,10 +34,23 @@ def main():
             break
 
         try:
+            route = router.route_query(query)
+            print(
+                f"\n[ROUTE]: {route}\n"
+            )
+            if route == "conversation":
+                response = conversational_agent.generate_response(query,history="")
+                
+            elif route == "rag":
 
-            # RUN PIPELINE
-            reranked_docs = ret_pipeline.retrieve_run(query)
-            response = gen_pipeline.run(query, reranked_docs)
+                # RUN PIPELINE
+                reranked_docs = ret_pipeline.retrieve_run(query)
+                response = gen_pipeline.run(query, reranked_docs, mode="rag")
+
+            else:
+                
+                reranked_docs = ret_pipeline.retrieve_run(query)
+                response = gen_pipeline.run(query, reranked_docs, mode="hybrid_rag")
 
             # PRINT RESPONSE
             print(
