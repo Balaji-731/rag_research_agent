@@ -3,7 +3,7 @@ from langchain_core.documents import Document
 from src.ingestion.loader import PDFLoader
 from src.ingestion.splitter import TextSplitter
 from src.ingestion.embeddings import Embeddings
-
+import uuid
 
 class VectorStore:
 
@@ -21,7 +21,7 @@ class VectorStore:
             )
             for chunk in chunks
         ]
-        ids = [str(i) for i in range(len(chunks))]
+        ids = [str(uuid.uuid4()) for _ in range(len(chunks))]
         self.vector_store._collection.add(
             documents=[doc.page_content for doc in documents],
             metadatas=[doc.metadata for doc in documents],
