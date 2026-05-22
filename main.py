@@ -1,16 +1,21 @@
 from src.llm.generator_pipeline import GeneratorPipeline
 from src.retrieval.retrieval_pipeline import RetrievalPipeline
-from src.agent.query_router import QueryRouter
+from src.agent.orchestrator import Orchestrator
 from src.agent.conversational_agent import ConversationalAgent
+from src.agent.memory_agent import MemoryAgent
+from src.memory.chat_memory import ChatMemory
+from src.memory.memory_formatter import MemoryFormatter
 
 def main():
 
     # INITIALIZE PIPELINE
     ret_pipeline = RetrievalPipeline()
     gen_pipeline = GeneratorPipeline()
-    router = QueryRouter()
+    orchestrator = Orchestrator()
     conversational_agent = ConversationalAgent()
-    
+    memory_agent = MemoryAgent()
+    formatter = MemoryFormatter()
+    memory = ChatMemory()
 
 
     print("\n========== AGENTIC RAG ==========\n")
@@ -34,23 +39,29 @@ def main():
             break
 
         try:
-            route = router.route_query(query)
+            history = memory.get_history()
+            formatted_history = formatter.format_memory(history)
+            route = orchestrator.decide(query,formatted_history)
             print(
                 f"\n[ROUTE]: {route}\n"
             )
+
             if route == "conversation":
-                response = conversational_agent.generate_response(query,history="")
+                response = conversational_agent.generate_response(query,formatted_history)
+                
+            elif route == "memory":
+                response = memory_agent.answer_from_memory(query,formatted_history)
                 
             elif route == "rag":
-
-                # RUN PIPELINE
                 reranked_docs = ret_pipeline.retrieve_run(query)
-                response = gen_pipeline.run(query, reranked_docs, mode="rag")
+                response = gen_pipeline.run(query, reranked_docs, formatted_history, mode="rag")
 
             else:
-                
                 reranked_docs = ret_pipeline.retrieve_run(query)
-                response = gen_pipeline.run(query, reranked_docs, mode="hybrid_rag")
+                response = gen_pipeline.run(query, reranked_docs, formatted_history, mode="hybrid_rag")
+
+            memory.add_message("user",query)
+            memory.add_message("assistant",response)
 
             # PRINT RESPONSE
             print(
