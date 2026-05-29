@@ -13,6 +13,7 @@ from src.agent.conversational_agent import ConversationalAgent
 from src.agent.memory_agent import MemoryAgent
 from src.memory.chat_memory import ChatMemory
 from src.memory.memory_formatter import MemoryFormatter
+from src.voice.voice_pipeline import VoicePipeline
 
 app = FastAPI(title="Document Q&A Agent")
 
@@ -30,6 +31,7 @@ conversational_agent = ConversationalAgent()
 memory_agent = MemoryAgent()
 formatter = MemoryFormatter()
 memory = ChatMemory()
+voice_pipeline = VoicePipeline()
 
 class QuestionRequest(BaseModel):
     question: str
@@ -85,3 +87,15 @@ async def clear_session():
     """Clear chat history."""
     memory.clear_history()
     return {"message": "Session cleared"}
+
+@app.post("/voice")
+async def voice_to_text(audio: UploadFile=File(...)):
+    tmp_dir=tempfile.mkdtemp()
+    audio_path=os.path.join(tmp_dir,audio.filename)
+    with open(audio_path,"wb") as f:
+        content=await audio.read()
+        f.write(content)
+    query=voice_pipeline.audio_to_query(audio_path)
+    os.remove(audio_path)
+    os.rmdir(tmp_dir)
+    return {"query":query}
