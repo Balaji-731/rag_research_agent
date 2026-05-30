@@ -5,7 +5,8 @@ from src.ingestion.splitter import TextSplitter
 class Embeddings:
     def __init__(self,model_name="sentence-transformers/all-MiniLM-L6-v2"):
         self.model = HuggingFaceEmbeddings(
-            model_name=model_name
+            model_name=model_name,
+            model_kwargs={"local_files_only":True}
         )
     
     def embed(self,chunks):

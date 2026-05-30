@@ -3,7 +3,7 @@ from src.retrieval.retriever import Retriever
 
 class Reranker:
     def __init__(self,model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"):
-        self.model=CrossEncoder(model_name)
+        self.model=CrossEncoder(model_name,local_files_only=True)
 
     def rerank(self,query,retrieved_docs,top_k=3):
         pairs = [(query,doc["content"]) for doc in retrieved_docs]
