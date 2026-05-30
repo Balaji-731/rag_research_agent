@@ -15,3 +15,4 @@ pymupdf
 langchain-huggingface
 langchain-chroma
 langchain-ollama
+edge-tts

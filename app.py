@@ -15,29 +15,51 @@ st.set_page_config(
 )
 
 # =====================================================
-# CUSTOM CSS
+# CUSTOM CSS  (Issue 7 — enhanced styling)
 # =====================================================
 
 st.markdown("""
 <style>
 
 [data-testid="stSidebar"] {
-    border-right: 1px solid #2d2d2d;
+    border-right: 1px solid rgba(128, 128, 128, 0.3);
 }
 
 .stChatMessage {
     border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .block-container {
     padding-top: 2rem;
+    max-width: 100%;
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+/* Style the route caption */
+.stChatMessage .stCaption {
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 6px;
+    padding: 2px 8px;
+    display: inline-block;
+    font-size: 0.75rem;
+}
+
+/* File uploader area */
+[data-testid="stFileUploader"] {
+    border: 1px dashed rgba(128, 128, 128, 0.4);
+    border-radius: 8px;
+    padding: 0.5rem;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # =====================================================
-# SESSION STATE
+# SESSION STATE  (Issue 9 — replaced last_audio_processed
+#                 with last_audio_bytes for byte-level tracking)
 # =====================================================
 
 if "messages" not in st.session_state:
@@ -46,8 +68,8 @@ if "messages" not in st.session_state:
 if "voice_query" not in st.session_state:
     st.session_state.voice_query = None
 
-if "last_audio_processed" not in st.session_state:
-    st.session_state.last_audio_processed = False
+if "last_audio_bytes" not in st.session_state:
+    st.session_state.last_audio_bytes = None
 
 # =====================================================
 # SIDEBAR
@@ -63,7 +85,13 @@ with st.sidebar:
         accept_multiple_files=True
     )
 
-    if st.button("🚀 Ingest Documents") and uploaded_files:
+    # Issue 6 — give feedback when no files are selected
+    ingest_clicked = st.button("🚀 Ingest Documents")
+
+    if ingest_clicked and not uploaded_files:
+        st.warning("⚠️ Please select at least one PDF file first.")
+
+    if ingest_clicked and uploaded_files:
 
         with st.spinner("Ingesting documents..."):
 
@@ -104,9 +132,13 @@ with st.sidebar:
 
                     st.error(response.text)
 
+            # Issue 8 — user-friendly error messages
             except Exception as e:
 
-                st.error(str(e))
+                if "Connection" in str(e):
+                    st.error("⚠️ Cannot connect to the server. Is the API running?")
+                else:
+                    st.error(f"❌ Upload failed: {str(e)}")
 
     st.divider()
 
@@ -120,7 +152,7 @@ with st.sidebar:
 
             st.session_state.messages = []
             st.session_state.voice_query = None
-            st.session_state.last_audio_processed = False
+            st.session_state.last_audio_bytes = None
 
             st.rerun()
 
@@ -146,9 +178,13 @@ with st.sidebar:
 
 # =====================================================
 # VOICE PROCESSING
+# Issue 9 — guard uses byte comparison instead of boolean
+# Issue 1 — st.rerun() after successful transcription
 # =====================================================
 
-if audio_bytes and not st.session_state.last_audio_processed:
+if audio_bytes and audio_bytes != st.session_state.last_audio_bytes:
+
+    st.session_state.last_audio_bytes = audio_bytes
 
     voice_status_placeholder.info(
         "🎤 Transcribing audio..."
@@ -176,11 +212,13 @@ if audio_bytes and not st.session_state.last_audio_processed:
             )
 
             st.session_state.voice_query = transcript
-            st.session_state.last_audio_processed = True
 
             voice_status_placeholder.success(
                 "✅ Audio transcribed"
             )
+
+            # Issue 1 — immediately trigger query processing
+            st.rerun()
 
         else:
 
@@ -206,6 +244,7 @@ st.caption(
 
 # =====================================================
 # CHAT HISTORY
+# Issue 2 — render persisted audio alongside messages
 # =====================================================
 
 for msg in st.session_state.messages:
@@ -223,6 +262,10 @@ for msg in st.session_state.messages:
         st.markdown(
             msg["content"]
         )
+
+        # Issue 2 — replay audio from history
+        if msg.get("audio"):
+            st.audio(msg["audio"], format="audio/mp3")
 
 # =====================================================
 # CHAT INPUT
@@ -243,10 +286,12 @@ elif st.session_state.voice_query:
     prompt = st.session_state.voice_query
 
     st.session_state.voice_query = None
-    st.session_state.last_audio_processed = False
 
 # =====================================================
 # PROCESS QUERY
+# Issue 2 — store audio_data in session messages
+# Issue 3 — TTS failure handled with warnings
+# Issue 8 — user-friendly error messages
 # =====================================================
 
 if prompt:
@@ -284,26 +329,61 @@ if prompt:
                     answer = data["response"]
                     route = data["route"]
 
+                    # Issue 3 — wrap TTS in its own try/except
+                    audio_data = None
+                    try:
+                        tts_response = requests.post(
+                            f"{API_URL}/speak",
+                            json={"text": answer}
+                        )
+                        if tts_response.status_code == 200:
+                            audio_data = tts_response.content
+                            st.audio(
+                                audio_data,
+                                format="audio/mp3",
+                                autoplay=False
+                            )
+                        else:
+                            st.warning(
+                                "🔇 Voice playback unavailable for this response."
+                            )
+                    except Exception:
+                        st.warning(
+                            "🔇 Could not connect to voice service."
+                        )
+
                     st.caption(
                         f"🔀 Route: {route}"
                     )
 
                     st.markdown(answer)
 
+                    # Issue 2 — persist audio bytes in message
                     st.session_state.messages.append(
                         {
                             "role": "assistant",
                             "content": answer,
-                            "route": route
+                            "route": route,
+                            "audio": audio_data,
                         }
                     )
 
                 else:
 
                     st.error(
-                        response.text
+                        f"❌ Server error: {response.status_code}"
                     )
 
+            # Issue 8 — user-friendly connection errors
             except Exception as e:
 
-                st.error(str(e))
+                if "Connection" in str(type(e).__name__) or "Connection" in str(e):
+                    st.error(
+                        "⚠️ Cannot connect to the server. "
+                        "Make sure the API is running "
+                        "(`uvicorn api:app`)."
+                    )
+                else:
+                    st.error(
+                        f"❌ Something went wrong: {str(e)}"
+                    )

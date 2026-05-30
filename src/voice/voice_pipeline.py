@@ -9,5 +9,5 @@ class VoicePipeline:
     def audio_to_query(self,audio_path):
         return self.stt.transcribe(audio_path)
     
-    def speak_response(self,response):
-        self.tts.speak(response)
+    async def speak_response(self,response):
+        return await self.tts.generate(response)

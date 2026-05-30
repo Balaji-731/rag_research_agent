@@ -1,10 +1,19 @@
-import pyttsx3
+import edge_tts
+import asyncio
+import tempfile
 
 class TextToSpeech:
-    def __init__(self):
-        self.engine=pyttsx3.init()
-        self.engine.setProperty("rate",170)
-        
-    def speak(self,text):
-        self.engine.say(text)
-        self.engine.runAndWait()
+
+    async def generate(self,text):
+        tmp_file = tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".mp3"
+        )
+        communicate = edge_tts.Communicate(
+            text=text,
+            voice="en-US-AriaNeural"
+        )
+        await communicate.save(
+            tmp_file.name
+        )
+        return tmp_file.name

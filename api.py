@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from typing import List
 import os
 import tempfile
-
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from src.ingestion.ingestion_pipeline import IngestionPipeline
 from src.retrieval.retrieval_pipeline import RetrievalPipeline
 from src.llm.generator_pipeline import GeneratorPipeline
@@ -35,6 +36,8 @@ voice_pipeline = VoicePipeline()
 
 class QuestionRequest(BaseModel):
     question: str
+class TTSRequest(BaseModel):
+    text: str
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
@@ -99,3 +102,14 @@ async def voice_to_text(audio: UploadFile=File(...)):
     os.remove(audio_path)
     os.rmdir(tmp_dir)
     return {"query":query}
+
+@app.post("/speak")
+async def speak(req: TTSRequest):
+    audio_path = await voice_pipeline.speak_response(req.text)
+    # Issue 10 — clean up temp file after it has been sent
+    return FileResponse(
+        audio_path,
+        media_type="audio/mpeg",
+        filename="response.mp3",
+        background=BackgroundTask(os.remove, audio_path)
+    )
