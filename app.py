@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # =====================================================
-# CUSTOM CSS  (Issue 7 — enhanced styling)
+# CUSTOM CSS  
 # =====================================================
 
 st.markdown("""
@@ -58,8 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================================================
-# SESSION STATE  (Issue 9 — replaced last_audio_processed
-#                 with last_audio_bytes for byte-level tracking)
+# SESSION STATE  
 # =====================================================
 
 if "messages" not in st.session_state:
@@ -85,7 +84,6 @@ with st.sidebar:
         accept_multiple_files=True
     )
 
-    # Issue 6 — give feedback when no files are selected
     ingest_clicked = st.button("🚀 Ingest Documents")
 
     if ingest_clicked and not uploaded_files:
@@ -132,7 +130,6 @@ with st.sidebar:
 
                     st.error(response.text)
 
-            # Issue 8 — user-friendly error messages
             except Exception as e:
 
                 if "Connection" in str(e):
@@ -178,8 +175,6 @@ with st.sidebar:
 
 # =====================================================
 # VOICE PROCESSING
-# Issue 9 — guard uses byte comparison instead of boolean
-# Issue 1 — st.rerun() after successful transcription
 # =====================================================
 
 if audio_bytes and audio_bytes != st.session_state.last_audio_bytes:
@@ -217,7 +212,6 @@ if audio_bytes and audio_bytes != st.session_state.last_audio_bytes:
                 "✅ Audio transcribed"
             )
 
-            # Issue 1 — immediately trigger query processing
             st.rerun()
 
         else:
@@ -244,7 +238,6 @@ st.caption(
 
 # =====================================================
 # CHAT HISTORY
-# Issue 2 — render persisted audio alongside messages
 # =====================================================
 
 for msg in st.session_state.messages:
@@ -263,7 +256,6 @@ for msg in st.session_state.messages:
             msg["content"]
         )
 
-        # Issue 2 — replay audio from history
         if msg.get("audio"):
             st.audio(msg["audio"], format="audio/mp3")
 
@@ -286,13 +278,6 @@ elif st.session_state.voice_query:
     prompt = st.session_state.voice_query
 
     st.session_state.voice_query = None
-
-# =====================================================
-# PROCESS QUERY
-# Issue 2 — store audio_data in session messages
-# Issue 3 — TTS failure handled with warnings
-# Issue 8 — user-friendly error messages
-# =====================================================
 
 if prompt:
 
@@ -329,7 +314,6 @@ if prompt:
                     answer = data["response"]
                     route = data["route"]
 
-                    # Issue 3 — wrap TTS in its own try/except
                     audio_data = None
                     try:
                         tts_response = requests.post(
@@ -358,7 +342,6 @@ if prompt:
 
                     st.markdown(answer)
 
-                    # Issue 2 — persist audio bytes in message
                     st.session_state.messages.append(
                         {
                             "role": "assistant",
@@ -374,7 +357,6 @@ if prompt:
                         f"❌ Server error: {response.status_code}"
                     )
 
-            # Issue 8 — user-friendly connection errors
             except Exception as e:
 
                 if "Connection" in str(type(e).__name__) or "Connection" in str(e):

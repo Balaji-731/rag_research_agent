@@ -106,7 +106,6 @@ async def voice_to_text(audio: UploadFile=File(...)):
 @app.post("/speak")
 async def speak(req: TTSRequest):
     audio_path = await voice_pipeline.speak_response(req.text)
-    # Issue 10 — clean up temp file after it has been sent
     return FileResponse(
         audio_path,
         media_type="audio/mpeg",
